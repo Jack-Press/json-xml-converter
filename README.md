@@ -12,13 +12,13 @@ This project converts files between JSON and XML using Python. It reads a source
 python json-xml_converter.py
 ```
 
-4. When prompted, enter the file name, for example:
+4. When prompted, enter the source file name, for example:
 
 ```text
 JSON_Example.json
 ```
 
-The script will create the converted file automatically. For example, `JSON_Example.json` becomes `JSON_Example.xml`, and `XML_Example.xml` becomes `XML_Example.json`.
+After you enter a source file, the converter asks whether you want to rename the converted output. If you do, enter a new name; you can omit the expected extension, and the converter adds it. A name with the wrong extension is rejected with a warning and must be re-entered. If you keep the default name, `JSON_Example.json` becomes `JSON_Example.xml`, and `XML_Example.xml` becomes `XML_Example.json`. If the chosen output file already exists, the converter asks whether to overwrite it. If you decline, enter a different output file name.
 
 ## Inputs
 
@@ -37,7 +37,9 @@ Example files included in this project:
 - If the input is JSON, the output is an XML document.
 - If the input is XML, the output is a JSON document.
 - The converted file is written to the same directory as the source file.
-- The script does not overwrite an existing destination file
+- You can optionally choose a custom output file name.
+- Existing output files are overwritten only after you confirm. If you decline, you can choose a different output name.
+- Custom output names must use the correct destination type (`.xml` for JSON input or `.json` for XML input).
 - Output is encoded as UTF-8 text.
 
 ## Requirements

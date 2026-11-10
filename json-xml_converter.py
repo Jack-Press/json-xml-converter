@@ -74,6 +74,66 @@ def _xml_to_json(root):
     return {root.tag: value}
 
 
+def _confirm_overwrite(file_name):
+    while True:
+        answer = input(
+            f"{file_name} already exists. Overwrite it? (y/n): "
+        ).strip().lower()
+        if answer in {"y", "yes"}:
+            return True
+        if answer in {"n", "no"}:
+            return False
+        print("Please answer yes or no.")
+
+
+def _ask_yes_no(prompt):
+    while True:
+        answer = input(prompt).strip().lower()
+        if answer in {"y", "yes"}:
+            return True
+        if answer in {"n", "no"}:
+            return False
+        print("Please answer yes or no.")
+
+
+def _confirm_overwrite(file_name):
+    return _ask_yes_no(f"{file_name} already exists. Overwrite it? (y/n): ")
+
+
+def _get_output_name(converter_directory, destination_extension):
+    while True:
+        file_name = input(
+            f"Enter an output file name ({destination_extension}): "
+        ).strip()
+        candidate = Path(file_name)
+        if candidate.name != file_name or candidate.is_absolute():
+            print("Please enter a file name located in the converter's directory.")
+            continue
+        if candidate.suffix and candidate.suffix.lower() != destination_extension:
+            print(
+                f"That file name has the wrong file type; "
+                f"please use {destination_extension}."
+            )
+            continue
+        if not candidate.suffix:
+            candidate = candidate.with_suffix(destination_extension)
+        return converter_directory / candidate
+
+
+def _get_destination(source, converter_directory, destination_extension):
+    if _ask_yes_no("Would you like to rename the converted output file? (y/n): "):
+        destination = _get_output_name(converter_directory, destination_extension)
+    else:
+        destination = source.with_suffix(destination_extension)
+
+    while destination.exists():
+        if _confirm_overwrite(destination.name):
+            break
+        destination = _get_output_name(converter_directory, destination_extension)
+
+    return destination
+
+
 def convert_file():
     converter_directory = Path(__file__).resolve().parent
     file_name = input("Enter the JSON or XML file name: ").strip()
@@ -94,10 +154,7 @@ def convert_file():
         return
 
     destination_extension = ".xml" if extension == ".json" else ".json"
-    destination = source.with_suffix(destination_extension)
-    if destination.exists():
-        print(f"Output file already exists; it was not overwritten: {destination.name}")
-        return
+    destination = _get_destination(source, converter_directory, destination_extension)
 
     try:
         if extension == ".json":
