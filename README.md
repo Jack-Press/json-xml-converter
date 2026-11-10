@@ -39,7 +39,7 @@ Example files included in this project:
 - The converted file is written to the same directory as the source file.
 - You can optionally choose a custom output file name.
 - Existing output files are overwritten only after you confirm. If you decline, you can choose a different output name.
-- Custom output names must use the correct destination type (`.xml` for JSON input or `.json` for XML input).
+- Custom output names must either not include a type(one will automatically be attached) or use the correct destination type (`.xml` for JSON input or `.json` for XML input).
 - Output is encoded as UTF-8 text.
 
 ## Requirements

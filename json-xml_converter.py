@@ -66,6 +66,31 @@ def _xml_element_to_value(element):
             values[child.tag] = value
     return values
 
+
+def _format_json(value, level=0):
+    indent = "  " * level
+    if isinstance(value, dict):
+        if not value:
+            return "{}"
+        if all(not isinstance(item, (dict, list)) for item in value.values()):
+            return json.dumps(value, ensure_ascii=False)
+        entries = (
+            f'{"  " * (level + 1)}{json.dumps(key, ensure_ascii=False)}: '
+            f'{_format_json(item, level + 1)}'
+            for key, item in value.items()
+        )
+        return "{\n" + ",\n".join(entries) + f"\n{indent}" + "}"
+    if isinstance(value, list):
+        if not value:
+            return "[]"
+        entries = (
+            f'{"  " * (level + 1)}{_format_json(item, level + 1)}'
+            for item in value
+        )
+        return "[\n" + ",\n".join(entries) + f"\n{indent}" + "]"
+    return json.dumps(value, ensure_ascii=False)
+
+
 def _ask_yes_no(prompt):
     while True:
         answer = input(prompt).strip().lower()
@@ -139,7 +164,7 @@ def convert_file():
             output = _json_to_xml(data)
         else:
             root = ET.parse(source).getroot()
-            output = json.dumps({root.tag: _xml_element_to_value(root)}, indent=2, ensure_ascii=False)
+            output = _format_json({root.tag: _xml_element_to_value(root)})
 
         # Write only after parsing/conversion succeeds so invalid input won't truncate output.
         destination.write_text(output + "\n", encoding="utf-8")
