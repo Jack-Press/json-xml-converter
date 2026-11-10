@@ -2,6 +2,8 @@ import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+def _xml_text(value):
+    return str(value).lower() if isinstance(value, bool) else str(value)
 
 def _append_xml_value(parent, name, value):
     if isinstance(value, list):
@@ -14,13 +16,13 @@ def _append_xml_value(parent, name, value):
         for child_name, child_value in value.items():
             _append_xml_value(element, child_name, child_value)
     elif value is not None:
-        element.text = str(value).lower() if isinstance(value, bool) else str(value)
-
+        element.text = _xml_text(value)
 
 def _json_to_xml(data):
     if isinstance(data, dict) and len(data) == 1:
         root_name, root_value = next(iter(data.items()))
         if isinstance(root_value, list):
+            # A plural root name is used for lists, with a simple trailing-"s" singular.
             item_name = root_name[:-1] if root_name.endswith("s") else root_name
             xml_root_name = root_name if root_name.endswith("s") else f"{root_name}s"
             root = ET.Element(xml_root_name)
@@ -32,7 +34,7 @@ def _json_to_xml(data):
             for name, value in root_value.items():
                 _append_xml_value(root, name, value)
         elif not isinstance(root_value, list) and root_value is not None:
-            root.text = str(root_value).lower() if isinstance(root_value, bool) else str(root_value)
+            root.text = _xml_text(root_value)
     else:
         root = ET.Element("root")
         if isinstance(data, dict):
@@ -42,11 +44,10 @@ def _json_to_xml(data):
             for value in data:
                 _append_xml_value(root, "item", value)
         elif data is not None:
-            root.text = str(data).lower() if isinstance(data, bool) else str(data)
+            root.text = _xml_text(data)
 
     ET.indent(root, space="  ")
     return ET.tostring(root, encoding="unicode", xml_declaration=True)
-
 
 def _xml_element_to_value(element):
     children = list(element)
@@ -57,34 +58,13 @@ def _xml_element_to_value(element):
     for child in children:
         value = _xml_element_to_value(child)
         if child.tag in values:
+            # Preserve repeated XML tags as JSON arrays.
             if not isinstance(values[child.tag], list):
                 values[child.tag] = [values[child.tag]]
             values[child.tag].append(value)
         else:
             values[child.tag] = value
     return values
-
-
-def _xml_to_json(root):
-    children = list(root)
-    if not children:
-        value = root.text.strip() if root.text and root.text.strip() else ""
-    else:
-        value = _xml_element_to_value(root)
-    return {root.tag: value}
-
-
-def _confirm_overwrite(file_name):
-    while True:
-        answer = input(
-            f"{file_name} already exists. Overwrite it? (y/n): "
-        ).strip().lower()
-        if answer in {"y", "yes"}:
-            return True
-        if answer in {"n", "no"}:
-            return False
-        print("Please answer yes or no.")
-
 
 def _ask_yes_no(prompt):
     while True:
@@ -94,11 +74,6 @@ def _ask_yes_no(prompt):
         if answer in {"n", "no"}:
             return False
         print("Please answer yes or no.")
-
-
-def _confirm_overwrite(file_name):
-    return _ask_yes_no(f"{file_name} already exists. Overwrite it? (y/n): ")
-
 
 def _get_output_name(converter_directory, destination_extension):
     while True:
@@ -126,8 +101,9 @@ def _get_destination(source, converter_directory, destination_extension):
     else:
         destination = source.with_suffix(destination_extension)
 
+    # Keep asking for another name when the user declines to overwrite an existing file.
     while destination.exists():
-        if _confirm_overwrite(destination.name):
+        if _ask_yes_no(f"{destination.name} already exists. Overwrite it? (y/n): "):
             break
         destination = _get_output_name(converter_directory, destination_extension)
 
@@ -163,8 +139,9 @@ def convert_file():
             output = _json_to_xml(data)
         else:
             root = ET.parse(source).getroot()
-            output = json.dumps(_xml_to_json(root), indent=2, ensure_ascii=False)
+            output = json.dumps({root.tag: _xml_element_to_value(root)}, indent=2, ensure_ascii=False)
 
+        # Write only after parsing/conversion succeeds so invalid input won't truncate output.
         destination.write_text(output + "\n", encoding="utf-8")
     except (OSError, json.JSONDecodeError, ET.ParseError, ValueError) as error:
         print(f"Could not convert {file_name}: {error}")
