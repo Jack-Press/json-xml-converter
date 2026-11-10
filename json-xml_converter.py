@@ -1,3 +1,4 @@
+import argparse
 import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -100,44 +101,66 @@ def _ask_yes_no(prompt):
             return False
         print("Please answer yes or no.")
 
-def _get_output_name(converter_directory, destination_extension):
+def _get_output_name(converter_directory, destination_extension, file_name=None):
+    interactive = file_name is None
     while True:
-        file_name = input(
-            f"Enter an output file name ({destination_extension}): "
-        ).strip()
+        if interactive:
+            file_name = input(
+                f"Enter an output file name ({destination_extension}): "
+            ).strip()
         candidate = Path(file_name)
         if candidate.name != file_name or candidate.is_absolute():
             print("Please enter a file name located in the converter's directory.")
+            if not interactive:
+                return None
             continue
         if candidate.suffix and candidate.suffix.lower() != destination_extension:
             print(
                 f"That file name has the wrong file type; "
                 f"please use {destination_extension}."
             )
+            if not interactive:
+                return None
             continue
         if not candidate.suffix:
             candidate = candidate.with_suffix(destination_extension)
         return converter_directory / candidate
 
 
-def _get_destination(source, converter_directory, destination_extension):
-    if _ask_yes_no("Would you like to rename the converted output file? (y/n): "):
+def _get_destination(
+    source,
+    converter_directory,
+    destination_extension,
+    output_name=None,
+    overwrite_enable=False,
+):
+    if output_name is not None:
+        if not output_name.strip():
+            destination = source.with_suffix(destination_extension)
+        else:
+            destination = _get_output_name(
+                converter_directory, destination_extension, output_name.strip()
+            )
+            if destination is None:
+                return None
+    elif _ask_yes_no("Would you like to rename the converted output file? (y/n): "):
         destination = _get_output_name(converter_directory, destination_extension)
     else:
         destination = source.with_suffix(destination_extension)
 
-    # Keep asking for another name when the user declines to overwrite an existing file.
-    while destination.exists():
-        if _ask_yes_no(f"{destination.name} already exists. Overwrite it? (y/n): "):
-            break
-        destination = _get_output_name(converter_directory, destination_extension)
+    if destination.exists() and not overwrite_enable:
+        print(f"Unable to overwrite {destination.name}; overwrite is disabled.")
+        return None
 
     return destination
 
 
-def convert_file():
+def convert_file(file_name=None, output_name=None, overwrite_enable=False):
     converter_directory = Path(__file__).resolve().parent
-    file_name = input("Enter the JSON or XML file name: ").strip()
+    if file_name is None:
+        file_name = input("Enter the JSON or XML file name: ").strip()
+    else:
+        file_name = file_name.strip()
     source = Path(file_name)
 
     if source.name != file_name or source.is_absolute():
@@ -155,7 +178,15 @@ def convert_file():
         return
 
     destination_extension = ".xml" if extension == ".json" else ".json"
-    destination = _get_destination(source, converter_directory, destination_extension)
+    destination = _get_destination(
+        source,
+        converter_directory,
+        destination_extension,
+        output_name,
+        overwrite_enable,
+    )
+    if destination is None:
+        return
 
     try:
         if extension == ".json":
@@ -176,4 +207,25 @@ def convert_file():
 
 
 if __name__ == "__main__":
-    convert_file()
+    parser = argparse.ArgumentParser(description="Convert between JSON and XML files.")
+    parser.add_argument("--file_name", "--file-name", help="Input JSON or XML file name.")
+    parser.add_argument(
+        "--output_name",
+        "--output-name",
+        nargs="?",
+        const="",
+        default=None,
+        help="Output file name. Omit its value or pass an empty string to keep the input file's base name.",
+    )
+    parser.add_argument(
+        "--overwrite_enable",
+        "--overwrite-enable",
+        action="store_true",
+        help="Allow an existing output file to be overwritten.",
+    )
+    arguments = parser.parse_args()
+    convert_file(
+        file_name=arguments.file_name,
+        output_name=arguments.output_name,
+        overwrite_enable=arguments.overwrite_enable,
+    )

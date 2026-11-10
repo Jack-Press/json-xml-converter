@@ -18,13 +18,25 @@ python json-xml_converter.py
 JSON_Example.json
 ```
 
-After you enter a source file, the converter asks whether you want to rename the converted output. If you do, enter a new name; you can omit the expected extension, and the converter adds it. A name with the wrong extension is rejected with a warning and must be re-entered. If you keep the default name, `JSON_Example.json` becomes `JSON_Example.xml`, and `XML_Example.xml` becomes `XML_Example.json`. If the chosen output file already exists, the converter asks whether to overwrite it. If you decline, enter a different output file name.
+After you enter a source file, the converter asks whether you want to rename the converted output. If you do, enter a new name; you can omit the expected extension, and the converter adds it. A name with the wrong extension is rejected with a warning and must be re-entered. If you keep the default name, `JSON_Example.json` becomes `JSON_Example.xml`, and `XML_Example.xml` becomes `XML_Example.json`. If the output file already exists, conversion stops without changing it unless `--overwrite_enable` is supplied.
+
+### Optional command-line arguments
+
+You can provide any of these options to avoid the corresponding prompts:
+
+```bash
+python json-xml_converter.py --file_name JSON_Example.json --output_name converted.xml --overwrite_enable
+```
+
+- `--file_name` (or `--file-name`): source file name. If omitted, the program prompts for it.
+- `--output_name` (or `--output-name`): output file name. If the option is omitted, the program asks whether to rename the output. Omit the option's value (`--output_name`) or pass an empty string (`--output_name ""` or `--output_name=`) to use the source file's base name with the converted extension.
+- `--overwrite_enable` (or `--overwrite-enable`): allow an existing output file to be overwritten. Without this option, an existing output file is left unchanged, a message is printed, and conversion stops.
 
 ## Inputs
 
-- A valid `.json` file or a valid `.xml` file
-- The file must be located in the converter directory
-- File names must be entered without a full path
+- `--file_name` (or `--file-name`): source file name. If omitted, the program prompts for it.
+- `--output_name` (or `--output-name`): output file name. If the option is omitted, the program asks whether to rename the output. Omit the option's value (`--output_name`) or pass an empty string (`--output_name ""` or `--output_name=`) to use the source file's base name with the converted extension.
+- `--overwrite_enable` (or `--overwrite-enable`): allow an existing output file to be overwritten. Without this option, an existing output file is left unchanged, a message is printed, and conversion stops.
 - Supported input content includes nested objects, arrays, and repeated XML elements
 
 Example files included in this project:
@@ -38,8 +50,8 @@ Example files included in this project:
 - If the input is XML, the output is a JSON document.
 - The converted file is written to the same directory as the source file.
 - You can optionally choose a custom output file name.
-- Existing output files are overwritten only after you confirm. If you decline, you can choose a different output name.
-- Custom output names must either not include a type(one will automatically be attached) or use the correct destination type (`.xml` for JSON input or `.json` for XML input).
+- Existing output files are overwritten only when `--overwrite_enable` is supplied. Otherwise, conversion stops without changing the existing file.
+- Custom output names may omit the extension (the expected extension is added) or use the correct destination extension (`.xml` for JSON input or `.json` for XML input).
 - Output is encoded as UTF-8 text.
 
 ## Requirements
