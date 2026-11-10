@@ -34,9 +34,9 @@ python json-xml_converter.py --file_name JSON_Example.json --output_name convert
 
 ## Inputs
 
-- `--file_name` (or `--file-name`): source file name. If omitted, the program prompts for it.
-- `--output_name` (or `--output-name`): output file name. If the option is omitted, the program asks whether to rename the output. Omit the option's value (`--output_name`) or pass an empty string (`--output_name ""` or `--output_name=`) to use the source file's base name with the converted extension.
-- `--overwrite_enable` (or `--overwrite-enable`): allow an existing output file to be overwritten. Without this option, an existing output file is left unchanged, a message is printed, and conversion stops.
+- A valid `.json` file or a valid `.xml` file
+- The file must be located in the converter directory
+- File names must be entered without a full path
 - Supported input content includes nested objects, arrays, and repeated XML elements
 
 Example files included in this project:
